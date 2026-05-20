@@ -11,7 +11,7 @@ Cubre: estructura XML, reglas de llenado campo a campo, todos los catálogos, ma
 ### Opción 1 — Instalar directo desde GitHub (recomendado)
 
 ```bash
-claude skill install https://github.com/TU_USUARIO/cfdi-40-skill
+claude skill install https://github.com/eduardoayalasoto/cfdi-40-skill
 ```
 
 Eso descarga el skill y lo instala globalmente. Disponible en todas tus sesiones de Claude Code.
@@ -19,7 +19,7 @@ Eso descarga el skill y lo instala globalmente. Disponible en todas tus sesiones
 ### Opción 2 — Clonar y instalar localmente
 
 ```bash
-git clone https://github.com/TU_USUARIO/cfdi-40-skill.git
+git clone https://github.com/eduardoayalasoto/cfdi-40-skill.git
 claude skill install ./cfdi-40-skill
 ```
 
@@ -29,7 +29,7 @@ Si quieres el skill disponible solo dentro de un proyecto específico (no global
 
 ```bash
 cd tu-proyecto/
-claude skill install https://github.com/TU_USUARIO/cfdi-40-skill --project
+claude skill install https://github.com/eduardoayalasoto/cfdi-40-skill --project
 ```
 
 ---
