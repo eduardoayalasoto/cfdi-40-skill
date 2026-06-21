@@ -1,6 +1,6 @@
  {
     "name": "cfdi-40-skill",
-    "description": "Skills para generación y conversión de CFDi 4.0",
+    "description": "Skills para CFDi 4.0 y complementos (Pagos 2.0, Carta Porte 3.1)",
     "owner": {
       "name": "Eduardo Ayala",
       "url": "https://github.com/eduardoayalasoto"
@@ -10,8 +10,8 @@
       {
         "name": "cfdi-40",
         "source": "./",
-        "version": "1.0.0",
-        "description": "Skill para trabajar con CFDi 4.0 — generación, validación y conversión"
+        "version": "1.1.0",
+        "description": "CFDi 4.0 + complementos: generación, validación, conversión y matrices de error (CFDI40xxx, Carta Porte CPxxx, Pagos CRPxxxxx)"
       }
     ]
   }

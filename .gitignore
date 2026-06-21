@@ -1,0 +1,8 @@
+# Documentación original SAT (fuente local; ya destilada en references/*.md).
+# Pesada (xls de catálogos ~21MB) y no se usa en runtime del skill.
+source files/
+
+# Temporales
+*.tmp
+*.tmp.*
+_*.txt

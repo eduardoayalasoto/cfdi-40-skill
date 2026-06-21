@@ -8,8 +8,12 @@ description: >
   FormaPago, MetodoPago, ObjetoImp, TasaOCuota, PPD, PUE, nodo Emisor,
   nodo Receptor, nodo Conceptos, nodo Impuestos, ClaveProdServ, o cualquier
   problema de validación, transformación o integración con sistemas de
-  facturación mexicanos. También aplica a CentroCFDI, eAdaptor, o cualquier
-  sistema receptor/emisor de comprobantes fiscales digitales.
+  facturación mexicanos. También cubre el Complemento Carta Porte 3.1 (CCP):
+  transporte de bienes, Autotransporte, Transporte Marítimo/Aéreo/Ferroviario,
+  Ubicaciones origen/destino, Mercancías, material peligroso, Figura de
+  Transporte, errores CPxxx (CP101–CP204), TranspInternac, IdCCP, carta de porte.
+  También aplica a CentroCFDI, eAdaptor, o cualquier sistema receptor/emisor de
+  comprobantes fiscales digitales.
 ---
 
 # Skill: CFDI 4.0 — Referencia Técnica Completa
@@ -37,6 +41,9 @@ Solo cuando el problema requiere más profundidad de la que hay en este archivo:
 | Estructura XML completa con ejemplo / Complemento de Pagos 2.0 detallado | `references/guia.md` |
 | Problema de XSLT que no resuelven los checks de abajo | `references/guia.md` sección 13 |
 | Validación XSD con código | `references/guia.md` sección 14 |
+| **Carta Porte 3.1**: estructura, nodos por modo, catálogos de decisión, flujo de captura | `references/carta-porte.md` |
+| **Carta Porte 3.1**: error CPxxx (CP101–CP204) → atributo, regla y cómo resolver | `references/carta-porte-errores.md` |
+| **Pagos 2.0**: error CRPxxxxx (CRP201xx/202xx) → atributo, regla y cómo resolver | `references/pagos-errores.md` |
 
 ---
 
@@ -276,6 +283,11 @@ ObjetoImp="01"
 
 Para la estructura completa del complemento `pago20:Pagos` con todos sus nodos y cálculos de Totales: `references/guia.md` sección 11.
 
+**Errores CRP (matriz completa en `references/pagos-errores.md`):** códigos `CRP201xx` (CFDI sobre P, valores fijos) y `CRP202xx` (complemento). Las familias que más rechazan:
+- **Cuadres totalizados** (CRP20201–20211, 20265/268/274): TotalRetenciones*/TotalTraslados*/MontoTotalPagos/BaseP/ImporteP = Σ de los DoctoRelacionado × TipoCambioP. **Calcúlalos en servidor**, no los teclee el usuario.
+- **Por pago** (CRP20212–20235): FormaDePagoP≠`99`; MonedaP≠`XXX`; TipoCambioP=`1` si MXN (requerido si otra); Monto>0; cuentas (CtaOrd/Ben) solo si forma bancarizada; TipoCadPago solo si forma=`03` y entonces Cert/Cad/Sello obligatorios.
+- **Por documento relacionado** (CRP20236–20247, 20278/279): ObjetoImpDR=`02`→ImpuestosDR existe; `01/03/04/05`→no existe; EquivalenciaDR=`1` si misma moneda; ImpSaldoInsoluto = ImpSaldoAnt − ImpPagado.
+
 ---
 
 ## Campos nuevos en v4.0 vs. v3.3 (causas frecuentes de migración fallida)
@@ -287,6 +299,35 @@ Para la estructura completa del complemento `pago20:Pagos` con todos sus nodos y
 | `DomicilioFiscalReceptor` | Receptor | Sí | CP del domicilio fiscal del receptor en el SAT |
 | `ObjetoImp` | Concepto | Sí | En cada concepto — nuevo |
 | Validación Nombre | Emisor y Receptor | — | Ahora el SAT valida Nombre contra l_RFC en tiempo real |
+
+---
+
+## Complemento Carta Porte 3.1 (CCP) — navegador
+
+Complemento dentro de un CFDI 4.0 **tipo T (Traslado)** o **tipo I (Ingreso)** que acredita el transporte de bienes. Detalle profundo en `references/carta-porte.md`; errores en `references/carta-porte-errores.md`.
+
+**Valores fijos por tipo de comprobante:**
+| | Tipo T (Traslado, medios propios) | Tipo I (Ingreso, transportista cobra flete) |
+|---|---|---|
+| Moneda | `XXX` | ≠ XXX (MXN/USD…) |
+| SubTotal / Total | `0` / `0` | calculado |
+| Receptor.Rfc | = Emisor.Rfc | RFC del cliente (en l_RFC) o genérico |
+| UsoCFDI | `S01` | el que aplique |
+| ClaveProdServ | la del bien | clave de **servicio de transporte** (78101xxx…, ver CP109) |
+| `CartaPorte:Version` | `3.1` | `3.1` |
+
+**Orden de decisión (gobierna qué nodos son obligatorios):**
+`TipoComprobante (T/I)` → `modo(s) de transporte` (01 Auto · 02 Marítimo · 03 Aéreo · 04 Ferroviario) → `TranspInternac (Sí/No)` → `RegistroISTMO` → `SectorCOFEPRIS` → `MaterialPeligroso`. Cada switch habilita/obliga/prohíbe bloques completos.
+
+**Reglas que causan el 80% de los rechazos CPxxx:**
+- **Condicionales "no debe existir"**: si TranspInternac=`No`, omitir (no enviar vacío) RegimenesAduaneros/EntradaSalidaMerc/PaisOrigenDestino/ViaEntradaSalida (CP120/122/124). Igual con ISTMO (CP127).
+- **Conteo de Ubicaciones por modo**: Auto/Marítimo/Aéreo ≥2 (1 Origen+1 Destino, CP130); Ferroviario ≥1 Origen + ≥5 Destino (CP128/129).
+- **Cuadres**: `TotalDistRec`=Σ DistanciaRecorrida(Destino) (CP126); `PesoBrutoTotal`/`PesoNetoTotal` según modo (CP149–152); `NumTotalMercancias`=conteo (CP154).
+- **Material peligroso**: si la ClaveProdServCP tiene flag → MaterialPeligroso + CveMaterialPeligroso + Embalaje (CP155–157) + seguro medio ambiente en Auto (CP182).
+- **Autotransporte**: obliga FiguraTransporte con Operador `01` + NumLicencia (CP193/194/196); Remolques según col Remolque de c_ConfigAutotransporte (CP184).
+- **Catálogos con columna de decisión**: c_ConfigAutotransporte.Remolque, c_TipoDeServicio.Contenedor, c_ClaveProdServCP.MaterialPeligroso, c_RegimenAduanero.ImpoExpo — el valor de la columna decide obligatorio/opcional/prohibido (ver `carta-porte.md` §4).
+
+**Patrón de error handling**: pre-valida local en el orden de decisión de arriba **antes** de enviar al PAC; cuando el PAC devuelva `CPxxx`, traduce el código → sección/paso del wizard y resalta el campo (no solo mostrar el texto del SAT). Tabla completa en `carta-porte-errores.md`.
 
 ---
 
