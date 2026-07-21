@@ -1,6 +1,6 @@
 {
   "name": "cfdi-40-skill",
-  "description": "Skills para CFDi 4.0 y complementos (Pagos 2.0, Carta Porte 3.1)",
+  "description": "Skills para CFDi 4.0 y complementos (Pagos 2.0, Carta Porte 3.1, Nómina 1.2)",
   "owner": {
     "name": "Eduardo Ayala",
     "url": "https://github.com/eduardoayalasoto"
@@ -10,8 +10,8 @@
     {
       "name": "cfdi-40",
       "source": "./",
-      "version": "1.1.0",
-      "description": "CFDi 4.0 + complementos: generación, validación, conversión y matrices de error (CFDI40xxx, Carta Porte CPxxx, Pagos CRPxxxxx)"
+      "version": "1.2.0",
+      "description": "CFDi 4.0 + complementos: generación, validación, conversión y matrices de error (CFDI40xxx, Carta Porte CPxxx, Pagos CRPxxxxx, Nómina NOMxxx)"
     }
   ]
 }
