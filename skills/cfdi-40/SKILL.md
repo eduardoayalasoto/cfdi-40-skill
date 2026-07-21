@@ -12,6 +12,12 @@ description: >
   transporte de bienes, Autotransporte, Transporte Marítimo/Aéreo/Ferroviario,
   Ubicaciones origen/destino, Mercancías, material peligroso, Figura de
   Transporte, errores CPxxx (CP101–CP204), TranspInternac, IdCCP, carta de porte.
+  También cubre el Complemento de Nómina 1.2 (CFDI tipo N): recibo de nómina,
+  percepciones, deducciones, otros pagos, subsidio al empleo, TipoPercepcion,
+  TipoDeduccion, TipoOtroPago, TipoContrato, TipoRegimen, RegistroPatronal,
+  salario diario integrado (SDI), IMSS, NSS, aguinaldo, PTU, finiquito,
+  indemnización, incapacidades, horas extra, viáticos, asimilados a salarios,
+  errores NOMxxx (NOM1–NOM111).
   También aplica a CentroCFDI, eAdaptor, o cualquier sistema receptor/emisor de
   comprobantes fiscales digitales.
 ---
@@ -44,6 +50,8 @@ Solo cuando el problema requiere más profundidad de la que hay en este archivo:
 | **Carta Porte 3.1**: estructura, nodos por modo, catálogos de decisión, flujo de captura | `references/carta-porte.md` |
 | **Carta Porte 3.1**: error CPxxx (CP101–CP204) → atributo, regla y cómo resolver | `references/carta-porte-errores.md` |
 | **Pagos 2.0**: error CRPxxxxx (CRP201xx/202xx) → atributo, regla y cómo resolver | `references/pagos-errores.md` |
+| **Nómina 1.2**: estructura, catálogos de percepciones/deducciones, casos especiales (viáticos, ajuste subsidio, ISR anual) | `references/nomina.md` |
+| **Nómina 1.2**: error NOMxxx (NOM1–NOM111) → atributo, regla y cómo resolver | `references/nomina-errores.md` |
 
 ---
 
@@ -119,7 +127,7 @@ Error de redondeo casi siempre. La regla es:
 | I | Ingreso | ∑ conceptos | Calculado | Cualquiera | ✅ | ✅ | ✅ Condicional | Cualquiera |
 | E | Egreso | ∑ conceptos | Calculado | Cualquiera | ✅ | ✅ | ✅ Condicional | Cualquiera |
 | T | Traslado | ∑ conceptos | 0 | Cualquiera | ❌ | ❌ | ✅ Condicional | Cualquiera |
-| N | Nómina | ∑ conceptos | Calculado | Cualquiera | ❌ | Opcional | ❌ No existe | CN01 |
+| N | Nómina | Percep.+OtrosPagos | SubTotal−Descuento | **MXN** | ❌ | **PUE** | ❌ No existe | **CN01** |
 | P | Pago | **0** | **0** | **XXX** | ❌ | ❌ | ❌ No existe | **CP01** |
 
 ### c_FormaPago
@@ -328,6 +336,26 @@ Complemento dentro de un CFDI 4.0 **tipo T (Traslado)** o **tipo I (Ingreso)** q
 - **Catálogos con columna de decisión**: c_ConfigAutotransporte.Remolque, c_TipoDeServicio.Contenedor, c_ClaveProdServCP.MaterialPeligroso, c_RegimenAduanero.ImpoExpo — el valor de la columna decide obligatorio/opcional/prohibido (ver `carta-porte.md` §4).
 
 **Patrón de error handling**: pre-valida local en el orden de decisión de arriba **antes** de enviar al PAC; cuando el PAC devuelva `CPxxx`, traduce el código → sección/paso del wizard y resalta el campo (no solo mostrar el texto del SAT). Tabla completa en `carta-porte-errores.md`.
+
+---
+
+## Complemento de Nómina 1.2 (CFDI tipo N) — navegador
+
+Complemento `nomina12:Nomina` (namespace `http://www.sat.gob.mx/nomina12`, Version fija `1.2`) dentro de un CFDI 4.0 **tipo N**, uno por trabajador y periodo. Detalle profundo en `references/nomina.md`; errores NOM1–NOM111 en `references/nomina-errores.md`.
+
+**CFDI "sobre" — valores fijos (NOM1–NOM29):** `Moneda=MXN` · `Exportacion=01` · `MetodoPago=PUE` · sin FormaPago/CondicionesDePago/TipoCambio/InformacionGlobal · Receptor: RFC del trabajador (13, en l_RFC), `RegimenFiscalReceptor=605`, `UsoCFDI=CN01` · **un solo concepto** sin hijos: `ClaveProdServ=84111505`, `Cantidad=1`, `ClaveUnidad=ACT`, `Descripcion="Pago de nómina"`, `ObjetoImp=01`, sin nodo Impuestos. `SubTotal=TotalPercepciones+TotalOtrosPagos`, `Descuento=TotalDeducciones`, `Total=SubTotal−Descuento`.
+
+**Orden de decisión (gobierna qué nodos son obligatorios):**
+`TipoContrato (01–08 vs 09+)` → `TipoRegimen (02/03/04 vs 05–99)` → `RegistroPatronal` (obligatorio 01–08, prohibido 09+) → bloque IMSS (NSS, FechaInicioRelLaboral, Antigüedad, RiesgoPuesto, SDI si hay RegistroPatronal) → subsidio (TipoRegimen 02 → OtroPago 002 obligatorio) → por cada `TipoPercepcion`, sus nodos hijo.
+
+**Reglas que causan el 80% de los rechazos NOMxxx:**
+- **TipoPercepcion dispara nodos**: 019→HorasExtra · 014→Incapacidades (Σ ImporteMonetario = gravado+exento) · 022/023/025→SeparacionIndemnizacion + su total · 039/044→JubilacionPensionRetiro (039: TotalUnaExhibicion; 044: TotalParcialidad+MontoDiario, excluyentes) · 045→AccionesOTitulos · 038→ImporteExento=0 (previsión social sin clave → 056).
+- **Cuadres**: TotalPercepciones = TotalSueldos+TotalSepInd+TotalJubPR = TotalGravado+TotalExento; TotalDeducciones = TotalOtrasDeducciones+TotalImpuestosRetenidos (este último = Σ deducciones 002, y no existe si no hay 002); TotalOtrosPagos = Σ importes. **Calcular en servidor.**
+- **Cuenta de depósito**: CLABE 18 → sin atributo Banco (y dígito de control válido); cuenta 10/11/16 → Banco obligatorio.
+- **Ninguna percepción con gravado=0 y exento=0** a la vez; deducciones con Importe > 0.
+- **Subsidio**: OtroPago 002 con nodo SubsidioAlEmpleo e Importe ≤ SubsidioCausado; topes de SubsidioCausado (NOM101/108) cambian por decreto/UMA — parametrizables.
+
+**Casos especiales** (ver `nomina.md` §7): viáticos (OtroPago 003 → Percepcion 050 + Deduccion 081), ajuste mensual de subsidio (Deduccion 107/002/071 + OtroPago 007/008), ISR anual, separación con TipoRegimen 13, trabajador fallecido (XAXX010101000 + CURP), asimilados (contrato 09, régimen 05–11, sin subsidio).
 
 ---
 
