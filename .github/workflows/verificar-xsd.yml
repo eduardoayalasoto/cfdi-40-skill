@@ -1,0 +1,27 @@
+name: Verificar XSD
+
+# Garantiza que lo vendorizado siga siendo coherente: todo compila y los imports del agrupador resuelven.
+on:
+  pull_request:
+    paths:
+      - "skills/cfdi-40/**"
+      - "scripts/**"
+  push:
+    branches: [main]
+    paths:
+      - "skills/cfdi-40/**"
+      - "scripts/**"
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install lxml
+      - run: python scripts/sync_xsd.py --verificar

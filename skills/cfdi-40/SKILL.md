@@ -30,9 +30,47 @@ description: >
 - **Complemento de Pagos:** versión 2.0 (publicado 29/12/2021)
 - **Namespace obligatorio:** `http://www.sat.gob.mx/cfd/4`
 - **XSD oficial:** `https://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd`
-- **XSLT cadena original CFDI:** `https://www.sat.gob.mx/sitio_internet/cfd/4/cadenaoriginal_4_0.xslt`
+- **XSLT cadena original CFDI:** `https://www.sat.gob.mx/sitio_internet/cfd/4/cadenaoriginal_4_0/cadenaoriginal_4_0.xslt` (XSLT 2.0; incluye los XSLT de todos los complementos)
 - **XSLT cadena original Pagos:** `https://www.sat.gob.mx/sitio_internet/cfd/Pagos/Pagos20.xslt`
 - **Verificador UUID:** `https://verificacfdi.facturaelectronica.sat.gob.mx/`
+
+---
+
+## XSD y XSLT oficiales, locales y siempre al día
+
+Este skill trae una copia de los esquemas del SAT en `xsd/` (no hace falta descargarlos ni tener red).
+Las rutas son relativas a este archivo; la estructura replica `www.sat.gob.mx/`:
+
+| Qué | Archivo local |
+|---|---|
+| CFDI 4.0 | `xsd/sitio_internet/cfd/4/cfdv40.xsd` |
+| Cadena original CFDI 4.0 (XSLT 2.0) | `xsd/sitio_internet/cfd/4/cadenaoriginal_4_0/cadenaoriginal_4_0.xslt` |
+| Timbre Fiscal Digital 1.1 + cadena del timbre | `xsd/sitio_internet/cfd/TimbreFiscalDigital/TimbreFiscalDigitalv11.xsd`, `xsd/sitio_internet/timbrefiscaldigital/cadenaoriginal_TFD_1_0.xslt` |
+| Pagos 2.0 · Carta Porte 3.1 · Nómina 1.2 | `xsd/sitio_internet/cfd/Pagos/Pagos20.xsd` · `.../CartaPorte/CartaPorte31.xsd` · `.../nomina/nomina12.xsd` (cada uno con su `.xslt`) |
+| Comercio Exterior 2.0, Impuestos Locales, Leyendas Fiscales, INE 1.1, Donatarias 1.1 | carpetas `ComercioExterior20/`, `implocal/`, `leyendasFiscales/`, `ine/`, `donat/` |
+| Catálogos como tipos XSD (listas de valores válidos de CFDI y de los complementos; `c_ClaveProdServ` no viene aquí) | `xsd/sitio_internet/cfd/catalogos/` |
+
+**Validar un CFDI timbrado:** un `cfdv40.xsd` solo NO basta; el timbre y los complementos entran por un comodín
+estricto y su esquema debe estar cargado. Usa el agrupador `validador-cfdi40.xsd` (carga CFDI + timbre + complementos):
+
+```bash
+pip install lxml
+python scripts/validar_cfdi.py factura.xml          # desde la raíz del repo del skill
+```
+```python
+from lxml import etree
+esquema = etree.XMLSchema(etree.parse("validador-cfdi40.xsd"))   # ruta relativa a este skill
+doc = etree.parse("factura.xml")
+if not esquema.validate(doc):
+    for e in esquema.error_log: print(e.line, e.message)
+```
+En .NET carga `validador-cfdi40.xsd` en un `XmlSchemaSet` (`schemas.Add(null, ruta)`; `schemas.Compile()`).
+Esto valida **solo estructura** (tipos, patrones de RFC, obligatorios). No valida sello, certificado, lista 69-B ni reglas de cuadre.
+
+**Procedencia y actualización:** los archivos vienen de `phpcfdi/resources-sat-xml` (descarga automática del SAT con rutas
+relativas, dominio público). `xsd/UPSTREAM.json` guarda el commit y la huella; `xsd/MANIFEST.sha256`, la huella de cada
+archivo. Un workflow mensual (`.github/workflows/sync-xsd.yml`) vuelve a sincronizar con `scripts/sync_xsd.py` y abre un PR
+solo si algo cambió; si la fuente lleva más de 90 días sin actualizarse, avisa. No edites `xsd/` a mano.
 
 ---
 

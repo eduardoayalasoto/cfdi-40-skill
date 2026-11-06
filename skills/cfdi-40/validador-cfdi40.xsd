@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema agrupador: carga CFDI 4.0 + Timbre Fiscal Digital 1.1 + complementos en un solo esquema.
+  Un CFDI timbrado NO valida solo con cfdv40.xsd: el nodo del timbre y los complementos entran por un
+  comodín estricto (xs:any) y necesitan que su esquema esté cargado. Valida contra ESTE archivo.
+  Las rutas apuntan a xsd/, que mantiene scripts/sync_xsd.py. Este archivo sí se edita a mano.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import namespace="http://www.sat.gob.mx/cfd/4" schemaLocation="xsd/sitio_internet/cfd/4/cfdv40.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/TimbreFiscalDigital" schemaLocation="xsd/sitio_internet/cfd/TimbreFiscalDigital/TimbreFiscalDigitalv11.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/Pagos20" schemaLocation="xsd/sitio_internet/cfd/Pagos/Pagos20.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/CartaPorte31" schemaLocation="xsd/sitio_internet/cfd/CartaPorte/CartaPorte31.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/nomina12" schemaLocation="xsd/sitio_internet/cfd/nomina/nomina12.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/ComercioExterior20" schemaLocation="xsd/sitio_internet/cfd/ComercioExterior20/ComercioExterior20.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/implocal" schemaLocation="xsd/sitio_internet/cfd/implocal/implocal.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/leyendasFiscales" schemaLocation="xsd/sitio_internet/cfd/leyendasFiscales/leyendasFisc.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/ine" schemaLocation="xsd/sitio_internet/cfd/ine/ine11.xsd"/>
+  <xs:import namespace="http://www.sat.gob.mx/donat" schemaLocation="xsd/sitio_internet/cfd/donat/donat11.xsd"/>
+</xs:schema>

@@ -1,0 +1,52 @@
+name: Sincronizar XSD del SAT
+
+# Cada día 1 del mes revisa la fuente (phpcfdi/resources-sat-xml) y, si cambió algo que usa el skill,
+# abre un PR con el diff. Nunca hace push a main. También se puede lanzar a mano.
+on:
+  schedule:
+    - cron: "17 9 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar validadores
+        run: |
+          pip install lxml
+          sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
+
+      - name: Sincronizar y validar
+        id: sync
+        run: python scripts/sync_xsd.py
+
+      - name: Abrir PR con los cambios
+        if: steps.sync.outputs.CAMBIOS == 'si'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_FUENTE: ${{ steps.sync.outputs.COMMIT_FUENTE }}
+          ARCHIVOS: ${{ steps.sync.outputs.ARCHIVOS }}
+        run: |
+          rama="chore/xsd-sat-$(date -u +%Y-%m)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$rama"
+          git add skills/cfdi-40/xsd
+          git commit -m "chore(xsd): actualizar XSD/XSLT del SAT (fuente ${COMMIT_FUENTE:0:10})"
+          git push origin "$rama"
+          gh pr create --base main --head "$rama" \
+            --title "chore(xsd): actualizar XSD/XSLT del SAT ($(date -u +%Y-%m))" \
+            --body "Actualización automática desde phpcfdi/resources-sat-xml @ \`${COMMIT_FUENTE}\` (${ARCHIVOS} archivos).
+
+          Los esquemas compilan y el esquema agrupador \`validador-cfdi40.xsd\` resuelve todos sus imports.
+          Revisa el diff de \`skills/cfdi-40/xsd/\` y \`UPSTREAM.json\` antes de fusionar. Si cambió un catálogo, revisa también \`references/catalogos.md\`."
