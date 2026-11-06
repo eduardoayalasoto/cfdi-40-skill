@@ -69,8 +69,8 @@ Esto valida **solo estructura** (tipos, patrones de RFC, obligatorios). No valid
 
 **Procedencia y actualización:** los archivos vienen de `phpcfdi/resources-sat-xml` (descarga automática del SAT con rutas
 relativas, dominio público). `xsd/UPSTREAM.json` guarda el commit y la huella; `xsd/MANIFEST.sha256`, la huella de cada
-archivo. Un workflow mensual (`.github/workflows/sync-xsd.yml`) vuelve a sincronizar con `scripts/sync_xsd.py` y abre un PR
-solo si algo cambió; si la fuente lleva más de 90 días sin actualizarse, avisa. No edites `xsd/` a mano.
+archivo. Un workflow semanal (`.github/workflows/sync-xsd.yml`) vuelve a sincronizar con `scripts/sync_xsd.py` y abre un PR
+solo si algo cambió; además compara contra el sitio del SAT (`scripts/verificar_contra_sat.py`) y abre un issue si el SAT publicó algo que la fuente aún no refleja. No edites `xsd/` a mano.
 
 ---
 

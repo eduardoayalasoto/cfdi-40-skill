@@ -137,11 +137,11 @@ dependencias (51 archivos).
 
 - **Fuente:** [`phpcfdi/resources-sat-xml`](https://github.com/phpcfdi/resources-sat-xml), que descarga los archivos del SAT
   y convierte las rutas absolutas en relativas para poder usarlos sin red. Dominio público (Unlicense).
-- **Actualización:** el workflow `sync-xsd.yml` corre el día 1 de cada mes (o a mano desde la pestaña *Actions*), ejecuta
+- **Actualización:** el workflow `sync-xsd.yml` corre cada lunes (o a mano desde la pestaña *Actions*), ejecuta
   `scripts/sync_xsd.py`, valida que todo compile y abre un PR solo si hubo cambios. Nunca escribe en `main`.
   Requiere *Settings → Actions → General → Allow GitHub Actions to create and approve pull requests*.
 - **Procedencia:** `xsd/UPSTREAM.json` (commit y huella) y `xsd/MANIFEST.sha256` (huella por archivo).
-- **Aviso de fuente rezagada:** si la fuente lleva más de 90 días sin actualizarse, el workflow lo marca como advertencia.
+- **Fuente rezagada:** `scripts/verificar_contra_sat.py` compara `Last-Modified` de cada archivo en el SAT con la fecha de la fuente; si el SAT es más nuevo, el workflow abre un issue. Si la fuente lleva más de 90 días sin actualizarse, además lo marca como advertencia.
 - **Local:** `python scripts/sync_xsd.py` sincroniza; `python scripts/sync_xsd.py --verificar` valida sin red;
   `python scripts/validar_cfdi.py factura.xml` valida un CFDI (requiere `pip install lxml`).
 
