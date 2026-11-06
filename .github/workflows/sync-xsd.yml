@@ -1,0 +1,75 @@
+name: Sincronizar XSD del SAT
+
+# Cada lunes: (1) re-sincroniza desde phpcfdi/resources-sat-xml y abre un PR si cambió algo que usa el skill;
+# (2) compara contra el sitio del SAT (Last-Modified) y abre un issue si el SAT publicó algo que la fuente aún no refleja.
+# Nunca hace push a main. También se puede lanzar a mano.
+on:
+  schedule:
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar validadores
+        run: pip install lxml
+
+      - name: Sincronizar y validar
+        id: sync
+        run: python scripts/sync_xsd.py
+
+      - name: Abrir PR con los cambios
+        if: steps.sync.outputs.CAMBIOS == 'si'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_FUENTE: ${{ steps.sync.outputs.COMMIT_FUENTE }}
+          ARCHIVOS: ${{ steps.sync.outputs.ARCHIVOS }}
+        run: |
+          abiertos=$(gh pr list --state open --search "chore(xsd) in:title" --json number --jq 'length')
+          if [ "$abiertos" != "0" ]; then
+            echo "::notice::Ya hay un PR de XSD abierto; no se abre otro. Fusiónalo o ciérralo."
+            exit 0
+          fi
+          rama="chore/xsd-sat-$(date -u +%G-W%V)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$rama"
+          git add skills/cfdi-40/xsd
+          git commit -m "chore(xsd): actualizar XSD/XSLT del SAT (fuente ${COMMIT_FUENTE:0:10})"
+          git push origin "$rama"
+          gh pr create --base main --head "$rama" \
+            --title "chore(xsd): actualizar XSD/XSLT del SAT ($(date -u +%Y-%m-%d))" \
+            --body "Actualización automática desde phpcfdi/resources-sat-xml @ \`${COMMIT_FUENTE}\` (${ARCHIVOS} archivos).
+
+          Los esquemas compilan y el esquema agrupador \`validador-cfdi40.xsd\` resuelve todos sus imports.
+          Revisa el diff de \`skills/cfdi-40/xsd/\` y \`UPSTREAM.json\` antes de fusionar. Si cambió un catálogo, revisa también \`references/catalogos.md\`."
+
+      - name: Comparar contra el sitio del SAT
+        id: sat
+        run: python scripts/verificar_contra_sat.py
+
+      - name: Avisar si la fuente está rezagada respecto al SAT
+        if: steps.sat.outputs.DESFASE == 'si'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DETALLE: ${{ steps.sat.outputs.DETALLE }}
+        run: |
+          titulo="La fuente de XSD está rezagada respecto al SAT"
+          existe=$(gh issue list --state open --search "$titulo in:title" --json number --jq 'length')
+          if [ "$existe" = "0" ]; then
+            gh issue create --title "$titulo" --body "El SAT modificó archivos después de lo que sabe phpcfdi/resources-sat-xml: ${DETALLE}
+
+          Opciones: esperar a que la fuente se actualice, abrir un issue en phpcfdi/resources-sat-xml, o regenerar los archivos con phpcfdi/resources-sat-xml-generator."
+          fi

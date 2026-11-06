@@ -92,6 +92,8 @@ No necesitas hacer nada especial — Claude lo usa cuando es relevante al proble
 ```
 cfdi-40/
 ├── SKILL.md                  ← Trigger + 10 reglas de oro (siempre en contexto)
+├── validador-cfdi40.xsd      ← Agrupa CFDI 4.0 + timbre + complementos para validar
+├── xsd/                      ← XSD/XSLT oficiales del SAT (los mantiene scripts/sync_xsd.py)
 └── references/
     ├── guia.md               ← Estructura XML completa, reglas campo a campo,
     │                            XSLT diagnóstico con snippets C#/Python/bash,
@@ -121,6 +123,27 @@ cfdi-40/
 ```
 
 Claude carga solo el archivo de referencia que necesita según el problema — el contexto se mantiene eficiente.
+
+Fuera de `skills/cfdi-40/`, en la raíz del repo: `scripts/sync_xsd.py` (sincroniza los XSD), `scripts/validar_cfdi.py`
+(valida un XML contra el agrupador) y `.github/workflows/` (sincronización mensual y verificación).
+
+---
+
+## XSD y XSLT oficiales (actualización mensual)
+
+`skills/cfdi-40/xsd/` contiene los esquemas del SAT para CFDI 4.0, Timbre Fiscal Digital 1.1, Pagos 2.0, Carta Porte 3.1,
+Nómina 1.2, Comercio Exterior 2.0, Impuestos Locales, Leyendas Fiscales, INE 1.1 y Donatarias 1.1, con todas sus
+dependencias (51 archivos).
+
+- **Fuente:** [`phpcfdi/resources-sat-xml`](https://github.com/phpcfdi/resources-sat-xml), que descarga los archivos del SAT
+  y convierte las rutas absolutas en relativas para poder usarlos sin red. Dominio público (Unlicense).
+- **Actualización:** el workflow `sync-xsd.yml` corre cada lunes (o a mano desde la pestaña *Actions*), ejecuta
+  `scripts/sync_xsd.py`, valida que todo compile y abre un PR solo si hubo cambios. Nunca escribe en `main`.
+  Requiere *Settings → Actions → General → Allow GitHub Actions to create and approve pull requests*.
+- **Procedencia:** `xsd/UPSTREAM.json` (commit y huella) y `xsd/MANIFEST.sha256` (huella por archivo).
+- **Fuente rezagada:** `scripts/verificar_contra_sat.py` compara `Last-Modified` de cada archivo en el SAT con la fecha de la fuente; si el SAT es más nuevo, el workflow abre un issue. Si la fuente lleva más de 90 días sin actualizarse, además lo marca como advertencia.
+- **Local:** `python scripts/sync_xsd.py` sincroniza; `python scripts/sync_xsd.py --verificar` valida sin red;
+  `python scripts/validar_cfdi.py factura.xml` valida un CFDI (requiere `pip install lxml`).
 
 ---
 

@@ -1,0 +1,4 @@
+# Los XSD/XSLT del SAT se conservan byte a byte (el manifiesto lleva sha256 por archivo).
+skills/cfdi-40/xsd/** -text
+*.py text eol=lf
+*.yml text eol=lf
