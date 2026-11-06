@@ -3,7 +3,7 @@
   "commit": "be6963fcb22425dc6055634e0b8dfd5cee50021d",
   "commit_fecha": "2026-06-11T21:00:28-06:00",
   "archivos": 51,
-  "contenido_sha256": "804f82d3217965c677df5aae234dda8dc48d7d728ac0d10284c4fea884dfdfbc",
+  "contenido_sha256": "f095c0deb2f0c4f7c3367904ae275f7d4e5e9f01e1e7e734cfb29d70281f1e8a",
   "licencia": "Unlicense (dominio público; información pública del SAT)",
   "nota": "Generado por scripts/sync_xsd.py. No editar a mano."
 }
