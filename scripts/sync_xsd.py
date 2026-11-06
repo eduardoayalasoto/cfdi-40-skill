@@ -96,11 +96,19 @@ def cierre(base: Path) -> list[str]:
     return sorted(vistos)
 
 
+def leer_lf(ruta: Path) -> bytes:
+    """Bytes del archivo con finales de línea LF, sin importar cómo lo dejó el checkout (p. ej. autocrlf en Windows).
+
+    Sin esto, un clon en Windows y uno en Linux producen huellas distintas y el workflow semanal abriría un PR
+    en falso cada vez."""
+    return ruta.read_bytes().replace(b"\r\n", b"\n")
+
+
 def huella(base: Path, archivos: list[str]) -> str:
     h = hashlib.sha256()
     for rel in archivos:
         h.update(rel.encode())
-        h.update((base / rel).read_bytes())
+        h.update(leer_lf(base / rel))
     return h.hexdigest()
 
 
@@ -198,7 +206,7 @@ def main() -> int:
     else:
         temporal = tempfile.mkdtemp(prefix="sat-xml-")
         clon = Path(temporal)
-        subprocess.run(["git", "-c", "core.longpaths=true", "clone", "--quiet", "--depth", "1",
+        subprocess.run(["git", "-c", "core.longpaths=true", "-c", "core.autocrlf=false", "clone", "--quiet", "--depth", "1",
                         REPO_FUENTE, str(clon)], check=True)
     try:
         commit = subprocess.run(["git", "-C", str(clon), "rev-parse", "HEAD"], capture_output=True,
@@ -228,10 +236,10 @@ def main() -> int:
             for rel in archivos:
                 destino = DESTINO / rel
                 destino.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(base / rel, destino)
+                destino.write_bytes(leer_lf(base / rel))
             lic = clon / "LICENSE"
             if lic.exists():
-                shutil.copyfile(lic, DESTINO / "LICENSE-upstream")
+                (DESTINO / "LICENSE-upstream").write_bytes(leer_lf(lic))
             meta = {
                 "fuente": REPO_FUENTE.removesuffix(".git"),
                 "commit": commit,
