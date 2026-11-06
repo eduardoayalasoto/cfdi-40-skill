@@ -241,9 +241,10 @@ def main() -> int:
                 "licencia": "Unlicense (dominio público; información pública del SAT)",
                 "nota": "Generado por scripts/sync_xsd.py. No editar a mano.",
             }
-            meta_ruta.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            meta_ruta.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n",
+                                 encoding="utf-8", newline="\n")
             manifiesto = "".join(f"{hashlib.sha256((DESTINO / r).read_bytes()).hexdigest()}  {r}\n" for r in archivos)
-            (DESTINO / "MANIFEST.sha256").write_text(manifiesto, encoding="utf-8")
+            (DESTINO / "MANIFEST.sha256").write_text(manifiesto, encoding="utf-8", newline="\n")
         errores = validar_agrupador()
         if errores:
             for e in errores:
